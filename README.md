@@ -100,6 +100,8 @@ Groq, OpenRouter, and `/key` are not implemented in this version. `--model place
 | `/symbols` | `[query]` | Scan and list symbols (classes, functions, types) in the workspace |
 | `/find` | `<query>` | Inspect symbol signatures and exact file locations |
 | `/clear` | — | Clear terminal screen and message history |
+| `/sessions` | — | List saved conversations for the current project |
+| `/resume` | `[id\|latest]` | Resume a saved conversation with its model context |
 | `/exit` | — | Exit Zoe session |
 
 ---
@@ -135,6 +137,15 @@ printf 'Explain this project\n' | ./bin/zoe --model ollama:llama3.2
 printf 'hello\n' | ./bin/zoe --model placeholder
 ```
 Piped requests run sequentially and finish before Zoe exits at end of input. Slash commands are supported; `/exit` stops processing subsequent lines.
+
+#### Conversation history
+
+Zoe saves conversations per project in `.zoe/sessions/<session-id>.json`. Use
+`/sessions` to list the 20 most recent conversations and `/resume latest` or
+`/resume <id>` to continue one. Short, unambiguous ID prefixes are accepted.
+`/clear` clears the active conversation and removes its saved session. Session
+writes are atomic and best-effort, so an unwritable project does not prevent
+chatting.
 
 #### CLI Flags
 ```bash

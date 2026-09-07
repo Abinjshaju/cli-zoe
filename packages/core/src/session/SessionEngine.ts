@@ -18,6 +18,7 @@ import { KnowledgeStore } from '../memory/KnowledgeStore.js';
 import { WorkspaceSymbolIndex } from '../indexer/WorkspaceSymbolIndex.js';
 import { InspectSymbolTool } from '../tools/symbols/InspectSymbolTool.js';
 import { extractThoughts, parseStreamingThoughts } from './ThoughtParser.js';
+import { SessionStore, type PersistedSession, type SessionSummary } from './SessionStore.js';
 
 export interface SessionMessage {
   id: string;
@@ -38,10 +39,12 @@ export interface SessionEngineOptions {
   toolRegistry?: ToolRegistry;
   mentor?: MentorEngine;
   knowledge?: KnowledgeStore;
+  sessionStore?: SessionStore;
+  persistSessions?: boolean;
 }
 
 export class SessionEngine {
-  public readonly id: string;
+  public id: string;
   public readonly events: EventBus;
   public readonly permissions: PermissionManager;
   public readonly toolRegistry: ToolRegistry;
@@ -56,6 +59,8 @@ export class SessionEngine {
   private messages: SessionMessage[] = [];
   private state: SessionState = 'idle';
   private showThoughts = true;
+  private readonly sessionStore: SessionStore | null;
+  private createdAt = Date.now();
 
   constructor(options: SessionEngineOptions = {}) {
     this.id = randomUUID();
@@ -68,6 +73,9 @@ export class SessionEngine {
     this.project = ProjectDetector.detect(options.workspaceRoot || process.cwd());
     this.knowledge = options.knowledge ?? new KnowledgeStore(this.project.workspacePath);
     this.symbolIndex = new WorkspaceSymbolIndex(this.project.workspacePath);
+    this.sessionStore = options.sessionStore ?? (
+      options.persistSessions ? new SessionStore(this.project.workspacePath) : null
+    );
 
     // Register symbol inspection tool
     this.toolRegistry.register(new InspectSymbolTool(this.symbolIndex));
@@ -114,6 +122,7 @@ export class SessionEngine {
     }
     this.harness.setModel(this.model, this.provider);
     this.events.emit('provider:changed', { provider: this.provider, model: this.model });
+    this.saveSession();
   }
 
   public start(): void {
@@ -130,6 +139,7 @@ export class SessionEngine {
 
   public clearHistory(): void {
     this.messages = [];
+    this.sessionStore?.delete(this.id);
     this.events.emit('history:cleared', {});
   }
 
@@ -141,6 +151,7 @@ export class SessionEngine {
       timestamp: Date.now(),
     };
     this.messages.push(msg);
+    this.saveSession();
     this.events.emit('runtime:message', {
       content: msg.content,
       role: 'system',
@@ -159,6 +170,7 @@ export class SessionEngine {
       timestamp: Date.now(),
     };
     this.messages.push(userMsg);
+    this.saveSession();
     this.events.emit('user:input', { text: trimmed });
 
     // Transition state
@@ -228,6 +240,7 @@ export class SessionEngine {
         timestamp: Date.now(),
       };
       this.messages.push(assistantMsg);
+      this.saveSession();
       this.events.emit('runtime:message', {
         content: finalContent,
         role: 'assistant',
@@ -247,6 +260,7 @@ export class SessionEngine {
         timestamp: Date.now(),
       };
       this.messages.push(errorMsg);
+      this.saveSession();
       this.events.emit('runtime:message', {
         content: errorMsg.content,
         role: 'system',
@@ -258,6 +272,37 @@ export class SessionEngine {
   }
 
   public end(reason?: string): void {
+    this.saveSession();
     this.events.emit('session:end', { sessionId: this.id, reason });
+  }
+
+  public listSessions(): SessionSummary[] {
+    return this.sessionStore?.list() ?? [];
+  }
+
+  public resumeSession(query = 'latest'): PersistedSession {
+    if (!this.sessionStore) throw new Error('Session persistence is not enabled.');
+    const session = this.sessionStore.load(query);
+    this.id = session.id;
+    this.createdAt = session.createdAt;
+    this.messages = session.messages.map((message) => ({ ...message }));
+    this.model = session.model;
+    this.harness.setModel(this.model, this.provider);
+    this.events.emit('session:resumed', { sessionId: this.id, messageCount: this.messages.length });
+    return session;
+  }
+
+  private saveSession(): void {
+    if (!this.sessionStore || !this.messages.some((message) => message.role === 'user' || message.role === 'assistant')) return;
+    this.sessionStore.save({
+      version: 1,
+      id: this.id,
+      createdAt: this.createdAt,
+      updatedAt: Date.now(),
+      workspacePath: this.project.workspacePath,
+      provider: this.provider.name,
+      model: this.model,
+      messages: this.messages,
+    });
   }
 }

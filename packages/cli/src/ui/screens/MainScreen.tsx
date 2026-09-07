@@ -81,6 +81,7 @@ export function MainScreen({ session, commands }: MainScreenProps): React.JSX.El
     session.events.on('runtime:status', handleStatus);
     session.events.on('runtime:message', handleMessage);
     session.events.on('history:cleared', updateMessages);
+    session.events.on('session:resumed', updateMessages);
     session.events.on('runtime:state', updateState);
     session.events.on('provider:changed', handleProviderChange);
     session.events.on('thoughts:toggled', handleThoughtsToggled);
@@ -92,6 +93,7 @@ export function MainScreen({ session, commands }: MainScreenProps): React.JSX.El
       session.events.off('runtime:status', handleStatus);
       session.events.off('runtime:message', handleMessage);
       session.events.off('history:cleared', updateMessages);
+      session.events.off('session:resumed', updateMessages);
       session.events.off('runtime:state', updateState);
       session.events.off('provider:changed', handleProviderChange);
       session.events.off('thoughts:toggled', handleThoughtsToggled);

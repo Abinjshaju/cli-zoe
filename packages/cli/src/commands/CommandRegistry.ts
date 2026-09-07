@@ -55,6 +55,32 @@ export class CommandRegistry {
       ctx.session.clearHistory();
     });
 
+    this.register('sessions', 'List saved conversations for this project', (_args, ctx) => {
+      const sessions = ctx.session.listSessions();
+      if (sessions.length === 0) return 'No saved sessions found for this project.';
+      const lines = ['Saved sessions (newest first):'];
+      for (const session of sessions.slice(0, 20)) {
+        const marker = session.id === ctx.session.id ? '*' : ' ';
+        const updated = new Date(session.updatedAt).toLocaleString();
+        lines.push(`${marker} ${session.id.slice(0, 8)}  ${updated}  ${session.messageCount} messages`);
+        lines.push(`    ${session.title}  [${session.provider}:${session.model}]`);
+      }
+      lines.push('', '* current session. Use /resume <id> or /resume latest.');
+      return lines.join('\n');
+    });
+
+    this.register('resume', 'Resume a saved conversation (/resume [id|latest])', (args, ctx) => {
+      try {
+        const resumed = ctx.session.resumeSession(args[0] || 'latest');
+        const registry = ctx.registry ?? this.providerRegistry;
+        const resolved = registry.resolve(`${resumed.provider}:${resumed.model}`);
+        ctx.session.setProvider(resolved.provider, resolved.model);
+        return `Resumed session ${resumed.id.slice(0, 8)} with ${resumed.messages.length} messages (${resolved.provider.name}:${resolved.model}).`;
+      } catch (error) {
+        return `Unable to resume: ${error instanceof Error ? error.message : String(error)}`;
+      }
+    });
+
     this.register('model', 'Inspect or switch active model (e.g. /model agy:gemini-3.8-flash-high)', (args, ctx) => {
       const modelArg = args[0]?.trim();
       if (!modelArg) {

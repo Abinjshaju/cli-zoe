@@ -9,7 +9,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, it, expect } from 'vitest';
 import { CommandRegistry } from './CommandRegistry.js';
-import { SessionEngine, KnowledgeStore } from '@zoe/core';
+import { SessionEngine, KnowledgeStore, SessionStore } from '@zoe/core';
 
 describe('CommandRegistry', () => {
   it('detects slash commands', () => {
@@ -179,6 +179,32 @@ describe('CommandRegistry', () => {
     });
 
     expect(exited).toBe(true);
+  });
+
+  it('lists and resumes project conversations', async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'zoe-command-sessions-'));
+    try {
+      const store = new SessionStore(root);
+      const original = new SessionEngine({ workspaceRoot: root, sessionStore: store });
+      await original.send('design a URL shortener');
+
+      const current = new SessionEngine({ workspaceRoot: root, sessionStore: store });
+      const registry = new CommandRegistry();
+      const list = await registry.execute('/sessions', { session: current, exit: () => {} });
+      expect(list).toContain(original.id.slice(0, 8));
+      expect(list).toContain('design a URL shortener');
+
+      const result = await registry.execute(`/resume ${original.id.slice(0, 8)}`, {
+        session: current,
+        exit: () => {},
+      });
+      expect(result).toContain(`Resumed session ${original.id.slice(0, 8)}`);
+      expect(current.id).toBe(original.id);
+      expect(current.getMessages()[0].content).toBe('design a URL shortener');
+      expect(current.getProvider().name).toBe('placeholder');
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
   });
 
   it('returns helpful message for unknown commands', async () => {

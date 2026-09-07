@@ -10,6 +10,7 @@ import type { ModelProvider } from '../providers/ModelProvider.js';
 export interface ZoeEvents {
   'session:start': { sessionId: string };
   'session:end': { sessionId: string; reason?: string };
+  'session:resumed': { sessionId: string; messageCount: number };
   'user:input': { text: string };
   'runtime:stream': { chunk: string; fullText: string };
   'runtime:thought': { chunk: string; fullThought: string; isThinking: boolean };

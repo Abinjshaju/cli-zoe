@@ -56,6 +56,8 @@ Interactive Slash Commands:
   /symbols [query]      List codebase symbols
   /find <query>         Inspect symbol definitions and signatures
   /clear                Clear terminal screen history
+  /sessions             List saved conversations for this project
+  /resume [id|latest]   Resume a saved conversation
   /exit                 Exit Zoe
 `.trim();
 }
@@ -145,6 +147,7 @@ export async function run(args: string[] = process.argv.slice(2)): Promise<void>
   const session = new SessionEngine({
     provider: resolved.provider,
     model: resolved.model,
+    persistSessions: true,
   });
   const commands = new CommandRegistry(providerRegistry);
 

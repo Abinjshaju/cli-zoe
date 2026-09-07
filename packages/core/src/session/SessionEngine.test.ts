@@ -7,6 +7,10 @@
 import { describe, it, expect } from 'vitest';
 import { SessionEngine } from './SessionEngine.js';
 import { EventBus } from '../events/EventBus.js';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { SessionStore } from './SessionStore.js';
 
 describe('SessionEngine', () => {
   it('initializes with default placeholder provider and emits session:start', () => {
@@ -63,5 +67,28 @@ describe('SessionEngine', () => {
 
     session.clearHistory();
     expect(session.getMessages()).toHaveLength(0);
+  });
+
+  it('persists and resumes a project conversation', async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'zoe-engine-session-'));
+    try {
+      const store = new SessionStore(root);
+      const first = new SessionEngine({ workspaceRoot: root, sessionStore: store });
+      await first.send('remember this');
+      const savedId = first.id;
+
+      const second = new SessionEngine({ workspaceRoot: root, sessionStore: store });
+      const resumed = second.resumeSession(savedId.slice(0, 8));
+      expect(resumed.id).toBe(savedId);
+      expect(second.getMessages().map((message) => message.content)).toEqual([
+        'remember this',
+        'Zoe core is running.',
+      ]);
+
+      second.clearHistory();
+      expect(store.list()).toEqual([]);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
   });
 });
