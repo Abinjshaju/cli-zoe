@@ -23,7 +23,7 @@
     "engineering"
   ],
   "scripts": {
-    "build": "tsc --build",
+    "build": "tsc --build && node scripts/ensure-executable.js",
     "clean": "rm -rf dist",
     "prepack": "npm run build",
     "start": "node dist/index.js",

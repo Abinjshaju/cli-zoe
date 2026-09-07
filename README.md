@@ -129,7 +129,14 @@ npm run build
 
 # Run Zoe
 ./bin/zoe
+
+# Optional: expose `zoe` on your PATH for local development
+mkdir -p "$HOME/.local/bin"
+ln -sfn "$PWD/packages/cli/dist/index.js" "$HOME/.local/bin/zoe"
 ```
+
+The build marks the CLI entrypoint executable. Do not run Zoe with `sudo`;
+sessions and configuration belong to your user account.
 
 #### Piped input
 ```bash
