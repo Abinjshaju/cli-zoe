@@ -1,9 +1,9 @@
-# Reporting Security Issues
+# Security policy
 
-To report a security issue, please use [https://g.co/vulnz](https://g.co/vulnz).
-We use g.co/vulnz for our intake, and do coordination and disclosure here on
-GitHub (including using GitHub Security Advisory). The Google Security Team will
-respond within 5 working days of your report on g.co/vulnz.
+## Reporting a vulnerability
 
-[GitHub Security Advisory]:
-  https://github.com/google-gemini/gemini-cli/security/advisories
+Please report security issues privately through the **Security** tab of the GitHub repository by selecting **Report a vulnerability**. Do not open a public issue for an undisclosed vulnerability.
+
+Include the affected version or commit, reproduction steps, expected impact, and any suggested mitigation. Maintainers will acknowledge the report, investigate it, and coordinate disclosure and a fix with the reporter.
+
+Only the latest code on the default branch is actively supported during early development.

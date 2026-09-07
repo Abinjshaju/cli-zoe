@@ -5,9 +5,8 @@
 # Zoe runtime workspace data
 .zoe/
 
-# Dependency directory
-node_modules
-bower_components
+# Dependencies
+node_modules/
 
 # Editors
 .idea
@@ -20,40 +19,12 @@ Thumbs.db
 # TypeScript build info files
 *.tsbuildinfo
 
-# Ignore built ts files
-dist
+# Build output
+dist/
 
-# Docker folder to help skip auth refreshes
-.docker
-
-bundle
-
-# Test report files
+# Test output
 junit.xml
 packages/*/coverage/
 
-# Generated files
-packages/cli/src/generated/
-packages/core/src/generated/
-packages/devtools/src/_client-assets.ts
-.integration-tests/
-.perf-tests/
-packages/vscode-ide-companion/*.vsix
-packages/cli/download-ripgrep*/
-
-# GHA credentials
-gha-creds-*.json
-
 # Log files
 patch_output.log
-gemini-debug.log
-
-.genkit
-.gemini-clipboard/
-.eslintcache
-evals/logs/
-
-temp_agents/
-
-# conductor extension and planning directories
-conductor/
